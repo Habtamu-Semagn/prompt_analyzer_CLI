@@ -1,6 +1,6 @@
 import argparse
 import sys
-from analyzer import count_tokens, estimate_cost,count_few_shot_examples, has_system_instruction, has_delimiters, has_output_format, generate_suggestions, context_window_usage, fmt_bar
+from analyzer import count_tokens, estimate_cost,count_few_shot_examples, has_system_instruction, has_delimiters, has_output_format, generate_suggestions, context_window_usage, fmt_bar, estimate_embedding_costs
 
 def print_report(text, model, token_count, estimated_cost, suggestions):
     few_shot = count_few_shot_examples(text)
@@ -31,6 +31,12 @@ def print_report(text, model, token_count, estimated_cost, suggestions):
     print("─" * 40)
     for i, s in enumerate(suggestions, 1):
         print(f"  {i}. {s}")
+    
+    print("\n🧮 EMBEDDING COSTS (if embedded)")
+    print("─" * 40)
+    embedding_costs = estimate_embedding_costs(token_count)
+    for model, cost in embedding_costs.items():
+        print(f"  {model:<26}: ${cost:.6f}")
     print("\n" + "═" * 40)
     
 def main():

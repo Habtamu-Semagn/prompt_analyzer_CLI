@@ -26,6 +26,13 @@ CONTEXT_WINDOWS = {
     "claude-3-5-sonnet": 200_000,
     "claude-3-haiku":    200_000,
 }
+
+EMBEDDING_PRICING = {
+    "text-embedding-3-small": 0.020,
+    "text-embedding-3-large": 0.130,
+    "text-embedding-ada-002": 0.100,
+}
+
 def count_tokens(text, model):
 
     encoding = ENCODINGS.get(model, "cl100k_base")
@@ -82,6 +89,12 @@ def fmt_bar(token_count: int, window: int, width: int = 20) -> str:
     bar = "█" * filled + "░" * (width - filled)
     return f"[{bar}]"
 
+def estimate_embedding_costs(token_count: int) -> dict:
+    return {
+        model: (price * token_count) / 1_000_000
+        for model, price in EMBEDDING_PRICING.items()
+    }
+
 def generate_suggestions(text, token_count, model, sys_instr, few_shot, out_format, delimiter):
     suggestions = []
 
@@ -107,3 +120,4 @@ def generate_suggestions(text, token_count, model, sys_instr, few_shot, out_form
         suggestions.append("✅ Prompt looks good! No issues detected.")
 
     return suggestions
+

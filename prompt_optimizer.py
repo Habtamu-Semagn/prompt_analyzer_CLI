@@ -54,9 +54,11 @@ def main():
     print("  Delimiters" + " "*10 + f": {has_delimiters(text)}")
 
     
-    print("💬 Suggestions:")
+    print("\n💬 SUGGESTIONS:")
+    print("─" * 40)
     for i, s in enumerate(suggestions, 1):
         print(f"  {i}. {s}")
+    print("\n" + "═" * 40)    
 
 if __name__ == "__main__":
     main()

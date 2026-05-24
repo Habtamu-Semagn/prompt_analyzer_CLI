@@ -1,4 +1,5 @@
 import tiktoken
+import re
 
 ENCODINGS = {
 "gpt-4o":        "o200k_base",
@@ -28,6 +29,69 @@ def count_tokens(text, model):
 
 def estimate_cost(token, model):
 
-    cost = PRICING.get(model)
+    cost = PRICING.get(model, 0.0)
 
     return (cost * token) / 1_000_000
+
+def has_system_instruction(text: str) -> bool:
+    patterns = [r"(?i)^(you are|act as|your role|system:)"]
+    has_instruction = any(re.search(p, text) for p in patterns)
+    
+    if(has_instruction):
+        return "Yes"
+    else:
+        return "No"
+
+def count_few_shot_examples(text: str) -> int:
+    patterns = [r"(?i)(input\s*:.+?output\s*:)", r"(?i)(q\s*:\s*.+\n.*a\s*:)", r"(?i)example\s*\d+"]
+
+    count = 0
+    for pattern in patterns:
+        matches = re.findall(pattern, text)
+        count += len(matches)
+    
+    return count
+
+def has_output_format(text: str) -> bool:
+    patterns = [r"(?i)(json|markdown|bullet|table|list|yaml)"]
+    has_format = any(re.search(p, text) for p in patterns)
+
+    if(has_format):
+        return "Yes"
+    else:
+        return "No"
+
+def has_delimiters(text: str) -> bool:
+    patterns = [r"<\w+>.*?</\w+>", r'"""', r"---+"]
+    has_delimiters = any(re.search(p, text) for p in patterns)
+
+    if(has_delimiters):
+        return "Yes"
+    else:
+        return "No"
+
+def generate_suggestions(text, token_count, model, sys_instr, few_shot, out_format, delimiter):
+    suggestions = []
+
+    if token_count > 128000:
+        suggestions.append("🚨 Token limit exceeded. Please shorten your prompt.")
+    
+    if token_count > 10000:
+        suggestions.append("⚠️  Prompt is very long, consider using RAG instead.")
+
+    if sys_instr == "No":
+        suggestions.append("📌 Add a system instruction (e.g. 'You are an expert...')")
+
+    if out_format == "No":
+        suggestions.append("📋 Specify an output format (e.g. JSON, bullet list)")
+
+    if delimiter == "No":
+        suggestions.append("🔖 Use delimiters to separate sections (e.g. <context></context>)")
+
+    if few_shot == 0 and token_count < 500:
+        suggestions.append("💡 Add 2-3 few-shot examples to improve output quality")
+
+    if not suggestions:
+        suggestions.append("✅ Prompt looks good! No issues detected.")
+
+    return suggestions

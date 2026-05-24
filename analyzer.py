@@ -18,6 +18,14 @@ PRICING = {
     "claude-3-haiku":    0.25,
 }
 
+CONTEXT_WINDOWS = {
+    "gpt-4o":            128_000,
+    "gpt-4o-mini":       128_000,
+    "gpt-4-turbo":       128_000,
+    "gpt-3.5-turbo":      16_385,
+    "claude-3-5-sonnet": 200_000,
+    "claude-3-haiku":    200_000,
+}
 def count_tokens(text, model):
 
     encoding = ENCODINGS.get(model, "cl100k_base")
@@ -37,13 +45,10 @@ def has_system_instruction(text: str) -> bool:
     patterns = [r"(?i)^(you are|act as|your role|system:)"]
     has_instruction = any(re.search(p, text) for p in patterns)
     
-    if(has_instruction):
-        return "Yes"
-    else:
-        return "No"
+    return "Yes" if has_instruction else "No"
 
 def count_few_shot_examples(text: str) -> int:
-    patterns = [r"(?i)(input\s*:.+?output\s*:)", r"(?i)(q\s*:\s*.+\n.*a\s*:)", r"(?i)example\s*\d+"]
+    patterns = [r"(?i)input\s*:[\s\S]+?output\s*:", r"(?i)(q\s*:\s*.+\n.*a\s*:)", r"(?i)example\s*\d+"]
 
     count = 0
     for pattern in patterns:
@@ -56,19 +61,26 @@ def has_output_format(text: str) -> bool:
     patterns = [r"(?i)(json|markdown|bullet|table|list|yaml)"]
     has_format = any(re.search(p, text) for p in patterns)
 
-    if(has_format):
-        return "Yes"
-    else:
-        return "No"
+    return "Yes" if has_format else "No"
 
 def has_delimiters(text: str) -> bool:
-    patterns = [r"<\w+>.*?</\w+>", r'"""', r"---+"]
-    has_delimiters = any(re.search(p, text) for p in patterns)
+    patterns = [
+        r"<\w+>[\s\S]*?</\w+>",  # ✅ [\s\S] matches newlines too
+        r'"""',
+        r"---+",
+    ]
+    has_delim = any(re.search(p, text) for p in patterns)
+    return "Yes" if has_delim else "No"
 
-    if(has_delimiters):
-        return "Yes"
-    else:
-        return "No"
+def context_window_usage(token_count: int, model: str) -> tuple:
+    window = CONTEXT_WINDOWS.get(model, 128_000)
+    percentage = (token_count / window) * 100
+    return percentage, window
+
+def fmt_bar(token_count: int, window: int, width: int = 20) -> str:
+    filled = int((token_count / window) * width)
+    bar = "█" * filled + "░" * (width - filled)
+    return f"[{bar}]"
 
 def generate_suggestions(text, token_count, model, sys_instr, few_shot, out_format, delimiter):
     suggestions = []
